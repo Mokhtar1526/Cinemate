@@ -2,12 +2,14 @@ import React from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import Movie from '../components/movie';
+import { Icon } from 'react-native-paper';
 
 const Favourites = () => {
     const favourites = useSelector(state=>state.favourites.favourites)
     if(favourites.length>0)
     return (
         <FlatList
+        style={{backgroundColor:"#1a1b1c",padding:15}}
         data={favourites}
         renderItem={({item}) => (
           <Movie
@@ -24,14 +26,23 @@ const Favourites = () => {
     // {console.warn("No Favourites")}
     return(
         <View
-        style={{justifyContent:"center",alignItems:"center"}}
+        style={styles.container}
         >
-
-        <Image source={require('../assets/no favourites.jpg')}></Image>
+          <View style={{backgroundColor:"grey",width:200,height:230,borderRadius:30,justifyContent:"center",alignItems:"center"}}>
+            <Icon source={"star-box"} size={150} ></Icon>
+            <Text>No Favorites</Text>
+          </View>
         </View>
     )
 }
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  container: {
+    flex:1,
+    backgroundColor:"#1a1b1c",
+    justifyContent:"center",
+    alignItems:"center"
+  }
+})
 
 export default Favourites;

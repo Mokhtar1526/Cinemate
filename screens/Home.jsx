@@ -1,149 +1,116 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
-import Movie from "../components/movie";
+import { FlatList, StyleSheet, View } from "react-native";
+import { Button, Menu, Provider, TextInput } from "react-native-paper";
 import axios from "axios";
-import { Button, Divider, Menu, PaperProvider, TextInput } from "react-native-paper";
-import { Avatar, CheckBox, Dialog, Icon, ListItem } from "@rneui/themed";
+import Movie from "../components/movie";
 import { useSelector } from "react-redux";
 
 const Home = () => {
-  const favs = useSelector(state=>state.favourites.favourites)
   const [movies, setMovies] = useState([]);
-  const [text, setText] = React.useState("");
-  const [searchMovies, setSearchMovies] = useState(movies);
-  const [visible, setVisible] = React.useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [searchMovies, setSearchMovies] = useState([]);
+  const [visible, setVisible] = useState(false);
+  const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
+  const [popularMovies, setPopularMovies] = useState([]);
+  const [allMovies, setAllMovies] = useState([]);
+  const favorites = useSelector((state) => state.favourites.favourites);
 
-  const openMenu = () => setVisible(true);
-
-  const closeMenu = () => setVisible(false);
   useEffect(() => {
-    axios
-      .get(
-        "https://api.themoviedb.org/3/discover/movie?api_key=9813ce01a72ca1bd2ae25f091898b1c7"
-      )
-      .then((res) => {
-        setMovies(res.data.results);
-        setSearchMovies(res.data.results);
-      });
+    fetchData("https://api.themoviedb.org/3/discover/movie?api_key=9813ce01a72ca1bd2ae25f091898b1c7", setMovies);
+    fetchData("https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=3&api_key=9813ce01a72ca1bd2ae25f091898b1c7", setNowPlayingMovies);
+    fetchData("https://api.themoviedb.org/3/movie/popular?language=en-US&page=2&api_key=9813ce01a72ca1bd2ae25f091898b1c7", setPopularMovies);
+    fetchData("https://api.themoviedb.org/3/discover/movie?api_key=9813ce01a72ca1bd2ae25f091898b1c7", setAllMovies);
   }, []);
 
   useEffect(() => {
-    if (text === "") {
+    if (!searchText) {
       setSearchMovies(movies);
     } else {
-      const filteredMovies = movies.filter((movie) =>
-        movie.title.toLowerCase().includes(text.toLowerCase())
+      const filteredMovies = movies.filter(movie =>
+        movie.title.toLowerCase().includes(searchText.toLowerCase())
       );
       setSearchMovies(filteredMovies);
     }
-  }, [text]);
+  }, [searchText, movies]);
 
+  const fetchData = (url, setter) => {
+    axios.get(url)
+      .then((res) => setter(res.data.results))
+      .catch(error => console.error("Error fetching data: ", error));
+  };
 
-  const handleNowPlayingFilter = ()=>{
-    axios.get("https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=3&api_key=9813ce01a72ca1bd2ae25f091898b1c7").then(
-      (res) => {
-        setMovies(res.data.results)
-        setSearchMovies(res.data.results)
-      }
-    )
-  }
+  const handleFilter = (moviesList) => {
+    setSearchMovies(moviesList);
+    setMovies(moviesList);
+    setVisible(false);
+  };
 
-  const handlePopularFilter = ()=>{
-    axios.get("https://api.themoviedb.org/3/movie/popular?language=en-US&page=2&api_key=9813ce01a72ca1bd2ae25f091898b1c7").then(
-      (res) => {
-        setMovies(res.data.results)
-        setSearchMovies(res.data.results)
-      }
-    )
-  }
-
-  const handleAllMovies = ()=>{
-    axios.get("https://api.themoviedb.org/3/discover/movie?api_key=9813ce01a72ca1bd2ae25f091898b1c7").then(
-      (res) => {
-        setMovies(res.data.results)
-        setSearchMovies(res.data.results)
-      }
-    )
-  }
-  
   return (
-    <PaperProvider>
+    <Provider>
       <View style={styles.container}>
         <TextInput
-          outlineColor="#FF4433"
-          activeOutlineColor="#FF4433"
-          textColor="#FF4433"
-          placeholderTextColor="#FF4433"
+        outlineColor="red"
+        activeOutlineColor="red"
+        textColor="red"
+        placeholderTextColor="red"
           style={styles.textInput}
           mode="outlined"
           placeholder="Enter Movie Title"
           label="Enter Movie Title"
-          value={text}
-          onChangeText={(text) => setText(text)}
+          value={searchText}
+          onChangeText={setSearchText}
         />
         <Menu
-        visible={visible}
-        onDismiss={closeMenu}
-        anchor={<Button buttonColor="#FF4433" mode="contained" onPress={openMenu}>Filter</Button>}
-      >
-        <Menu.Item onPress={() => {
-          handleAllMovies();
-          setVisible(false)
-        }} title="All Movies" />
-        <Menu.Item onPress={() => {
-          handleNowPlayingFilter()
-          setVisible(false)
-        }} title="Now Playing" />
-        <Menu.Item onPress={() => {
-          handlePopularFilter()
-          setVisible(false)
-        }} title="Popular" />
-
-        
-      </Menu>
-      
+          visible={visible}
+          onDismiss={() => setVisible(false)}
+          anchor={<Button style={styles.filterBtn} mode="contained" buttonColor="red" onPress={() => setVisible(true)}>Filter</Button>}
+        >
+          <Menu.Item onPress={() => handleFilter(allMovies)} title="All Movies" />
+          <Menu.Item onPress={() => handleFilter(nowPlayingMovies)} title="Now Playing" />
+          <Menu.Item onPress={() => handleFilter(popularMovies)} title="Popular" />
+        </Menu>
       </View>
-
       <FlatList
         style={styles.list}
         data={searchMovies}
-        renderItem={({ item }) =>{
-          // console.log(favs.find((movie)=>movie.id==item.id));
-          return(
+        renderItem={({ item }) => (
           <Movie
             key={item.id}
             id={item.id}
             title={item.title}
-            poster_path={"https://image.tmdb.org/t/p/w500" + item.poster_path}
-            isFavorite={favs.find((movie)=>movie.id==item.id)?true:false}
-          ></Movie>
-          
-        )}}
-        keyExtractor={(movie) => movie.id}
-      ></FlatList>
-    </PaperProvider>
+            poster_path={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+            isFavorite={favorites.some(movie => movie.id === item.id)}
+          />
+        )}
+        keyExtractor={movie => movie.id.toString()}
+      />
+    </Provider>
   );
 };
 
 const styles = StyleSheet.create({
+  filterBtn:{
+    marginTop:8,
+  },
   textInput: {
     width: "70%",
-    backgroundColor:"#0E0C0A",
+    height:40,
+    backgroundColor:"#1a1b1c",
   },
   container: {
     display: "flex",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor:"#0E0C0A",
+    backgroundColor:"#1a1b1c",
     gap:5,
-    paddingVertical:30
+    paddingVertical:15
   },
   list:{
-    backgroundColor:"#0E0C0A",
+    backgroundColor:"#1a1b1c",
     paddingHorizontal:20,
-    paddingVertical:30
   }
 });
+
 
 export default Home;
